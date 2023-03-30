@@ -22,7 +22,7 @@ jobs:
     name: Get workflow version
     uses: ./.github/workflows/_get_workflow_version.yaml
     with:
-      repository-name: LedgerHQ/ledger-app-workflows
+      repository-name: ftheirs/ledger-app-workflows
       file-name: reusable_guidelines_enforcer.yml
 
   call_get_app_manifest:
