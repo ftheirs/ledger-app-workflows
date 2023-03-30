@@ -95,6 +95,14 @@ check_is_not_boilerplate_icon() (
         log_error "A custom menu icon must be provided, not boilerplate icon '$file'"
         return 1
     else
+        # # ls_files="$(tree app-repository/app)"
+        # ls_files="$(tree)"
+        # log_info "Files: $ls_files"
+        # filename="${file##*/}"
+        # log_info "ICON GIF: $filename"
+        # icon_path="$(find . -name $filename)"
+        # log_info "ICON path: $icon_path"
+
         md5sum=$(md5sum "$file" | cut -f1 -d' ')
         if [[ "$md5sum" == "c818a2ac5d4e36bb333c3f8f07a42f03" || "$md5sum" == "a905db408ef828bd200a0603a5a7c64a" || "$md5sum" == "fbe4d9f0512224bb3e139189e21e4541" ]]; then
             log_error "A custom menu icon must be provided, not renamed boilerplate icon '$file'"
@@ -130,6 +138,12 @@ main() (
     repo_name="$2"
     manifests_dir="$3"
 
+    echo "$error"
+    echo "$repo"
+    echo "$repo_name"
+    echo "$manifests_dir"
+    echo "$pwd"
+
     all_glyph_files=""
     declare -A icons_and_devices
 
@@ -144,8 +158,23 @@ main() (
             log_info "Checking variant $variant"
 
             # Get the icon and the device used for this variant, we'll check later
-            device="$(< "$manifest" jq ".VARIANTS.$variant.TARGET" | sed 's/"//g')"
+            device="$(< "$manifest" jq ".VARIANTS .$variant .TARGET" | sed 's/"//g')"
+
+            tmp1="$(< "$manifest" jq ".VARIANTS.$variant.APPNAME" | sed 's/"//g')"
+            tmp2="$(< "$manifest" jq ".VARIANTS.$variant.TARGET_NAME" | sed 's/"//g')"
+            tmp3="$(< "$manifest" jq ".VARIANTS.$variant")"
+            tmp4="$(< "$manifest" jq ".VARIANTS .$variant .ICONNAME")"
+
             icon="$repo/$(< "$manifest" jq ".VARIANTS.$variant.ICONNAME" | sed 's/"//g')"
+            # icon="$(< "$manifest" jq ".VARIANTS.$variant.ICONNAME" | sed 's/"//g')"
+
+            log_info "Tmp1: $tmp1"
+            log_info "Tmp2: $tmp2"
+            log_info "Tmp3: $tmp3"
+            log_info "Tmp4: $tmp4"
+
+            log_info "Device: $device"
+            log_info "Icon: $icon"
             # Store the couple icon/device as key of an associative array to auto remove duplicates from variants
             icons_and_devices["$icon;$device"]=1
 
@@ -157,11 +186,18 @@ main() (
 
     log_info "All manifests checked"
 
+    echo "Icons&Devices: $icons_and_devices"
     # Check each icon
     for icon_and_device in "${!icons_and_devices[@]}"; do
         icon="$(echo "$icon_and_device" | cut -d';' -f1)"
         device="$(echo "$icon_and_device" | cut -d';' -f2)"
-        check_icon "$repo_name" "$device" "$icon" || error=1
+        echo "VARS: $icon_and_device | $repo_name | $device | $icon"
+
+        filename="${icon##*/}"
+        log_info "ICON GIF: $filename"
+        icon_path="$(find . -name $filename)"
+
+        check_icon "$repo_name" "$device" "$icon_path" || error=1
     done
 
     # As we scanned for all devices and all variants, we can have a lot of duplicates for glyphs. Filter out duplicates and empty lines
@@ -169,7 +205,11 @@ main() (
     while IFS= read -r file; do
         # Skip SDK glyphs
         if [[ "$file" != "/opt/"*"-secure-sdk/"* ]]; then
-            check_glyph "$repo/$file" || error=1
+            filename="${file##*/}"
+            log_info "GLYPH: $filename"
+            icon_path="$(find . -name $filename)"
+            check_glyph "$icon_path" || error=1
+            # check_glyph "$repo/$file" || error=1
         fi
     done < <(echo "$all_glyph_files_no_duplicates")
 

@@ -1,6 +1,7 @@
 name: Check icons
 
 on:
+  workflow_dispatch:
   workflow_call:
     inputs:
       ledger-app-workflows_ref:
@@ -39,7 +40,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: ${{ inputs.app-repository }}
-          path: app-repository
+          path: app-repository/app
           submodules: recursive
 
       - name: Download manifest
